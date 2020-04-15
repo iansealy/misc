@@ -20,7 +20,7 @@ use Readonly;
 use Image::ExifTool;
 use File::Find;
 use File::stat;
-use File::Path;
+use File::Path qw(make_path);
 use File::Compare;
 use Algorithm::Combinatorics qw(combinations);
 use Digest::MD5;
