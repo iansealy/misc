@@ -55,6 +55,8 @@ Readonly our @TAG_ORDER => qw(
 my $dry_run;
 my $output_dir;
 my $extra_dir;
+my $extra_suffix;
+my $exifless_prefix;
 
 my ( $debug, $help, $man );
 
@@ -127,7 +129,7 @@ foreach my $file (@all_files) {
     }
     if ( !$tag_timestamp ) {
         printf {*STDERR} "%s No timestamps for %s\n", timestamp(), $file;
-        next;
+        next if !$exifless_prefix;
     }
 
     # Get camera model
@@ -140,6 +142,10 @@ foreach my $file (@all_files) {
     my ( $new_dir, $new_file ) =
       get_new_filename( $tag_timestamp, $digest, $model,
         $EXT_FOR{ $info->{FileType} } );
+
+    croak sprintf "mv %s %s can't be run because latter already exists\n",
+      $file, $new_file
+      if -f $new_file;
 
     if ($dry_run) {
         printf "mv %s %s\n", $file, $new_file;
@@ -225,15 +231,31 @@ sub get_digest {
 sub get_new_filename {
     my ( $timestamp, $digest, $model, $extension ) = @_;
 
-    my ( $year, $month, $day, $hour, $min, $sec ) = split /_/xms, $timestamp;
-    my $new_file =
-      sprintf '%s/%04d/%02d%s/%04d_%02d_%02d-%02d_%02d_%02d-%s%s.%s',
-      $output_dir, $year, $month,
-      ( defined $extra_dir ? q{/} . $extra_dir : q{} ), $year, $month, $day,
-      $hour, $min, $sec,
-      $digest, ( defined $model ? q{-} . $model : q{} ), $extension;
-    my $new_dir = sprintf '%s/%04d/%02d%s', $output_dir, $year, $month,
-      ( defined $extra_dir ? q{/} . $extra_dir : q{} );
+    my ( $new_dir, $new_file );
+
+    if ($timestamp) {
+        my ( $year, $month, $day, $hour, $min, $sec ) = split /_/xms,
+          $timestamp;
+        $new_file =
+          sprintf '%s/%04d/%02d%s/%04d_%02d_%02d-%02d_%02d_%02d-%s%s%s.%s',
+          $output_dir, $year, $month,
+          ( defined $extra_dir ? q{/} . $extra_dir : q{} ), $year, $month, $day,
+          $hour, $min, $sec,
+          $digest, ( defined $model ? q{-} . $model : q{} ),
+          ( defined $extra_suffix ? q{-} . $extra_suffix : q{} ), $extension;
+        $new_dir = sprintf '%s/%04d/%02d%s', $output_dir, $year, $month,
+          ( defined $extra_dir ? q{/} . $extra_dir : q{} );
+    }
+    else {
+        $new_file =
+          sprintf '%s%s/%s-%s%s%s.%s',
+          $output_dir, ( defined $extra_dir ? q{/} . $extra_dir : q{} ),
+          $exifless_prefix,
+          $digest, ( defined $model ? q{-} . $model : q{} ),
+          ( defined $extra_suffix ? q{-} . $extra_suffix : q{} ), $extension;
+        $new_dir = sprintf '%s%s', $output_dir,
+          ( defined $extra_dir ? q{/} . $extra_dir : q{} );
+    }
 
     return $new_dir, $new_file;
 }
@@ -248,12 +270,14 @@ sub get_and_check_options {
 
     # Get options
     GetOptions(
-        'dry_run'      => \$dry_run,
-        'output_dir=s' => \$output_dir,
-        'extra_dir=s'  => \$extra_dir,
-        'debug'        => \$debug,
-        'help'         => \$help,
-        'man'          => \$man,
+        'dry_run'           => \$dry_run,
+        'output_dir=s'      => \$output_dir,
+        'extra_dir=s'       => \$extra_dir,
+        'extra_suffix=s'    => \$extra_suffix,
+        'exifless_prefix=s' => \$exifless_prefix,
+        'debug'             => \$debug,
+        'help'              => \$help,
+        'man'               => \$man,
     ) or pod2usage(2);
 
     # Documentation
@@ -296,12 +320,21 @@ were created.
 
     perl rename_photo_video.pl --output_dir dir photo-dir video-dir
 
+    perl rename_photo_video.pl --output_dir dir --extra_dir John photo-dir
+
+    perl rename_photo_video.pl --output_dir dir --extra_suffix John photo-dir
+
+    perl rename_photo_video.pl --output_dir dir --extra_dir 2006/09 \
+        --exifless_prefix 2006_09_16 photo-dir
+
 =head1 USAGE
 
     rename_photo_video.pl
         [--dry_run]
         [--output_dir dir]
         [--extra_dir dir]
+        [--extra_suffix suffix]
+        [--exifless_prefix prefix]
         [--debug]
         [--help]
         [--man]
@@ -320,7 +353,16 @@ Base output directory.
 
 =item B<--extra_dir DIR>
 
-Extra subdirectory.
+Extra subdirectory (after year and month).
+
+=item B<--extra_suffix PREFIX>
+
+Extra suffix to add to filename before extension.
+
+=item B<--exifless_prefix PREFIX>
+
+Prefix applied after output directory (and any extra subdirectory) for files
+without EXIF data.
 
 =item B<--debug>
 
