@@ -24,6 +24,7 @@ use File::Path qw(make_path);
 use File::Compare;
 use Algorithm::Combinatorics qw(combinations);
 use Digest::MD5;
+use Sort::Naturally;
 
 # Constants
 Readonly our %EXT_FOR => (
@@ -57,6 +58,7 @@ my $output_dir;
 my $extra_dir;
 my $extra_suffix;
 my $exifless_prefix;
+my $zero_pad = 3;    ## no critic (ProhibitMagicNumbers)
 
 my ( $debug, $help, $man );
 
@@ -73,7 +75,7 @@ find(
     },
     @ARGV
 );
-@all_files = sort @all_files;
+@all_files = nsort(@all_files);
 
 if ($debug) {
     printf {*STDERR} "%s Found %d files\n", timestamp(), scalar @all_files;
@@ -100,6 +102,8 @@ if (@definite_dupes) {
 if ($debug) {
     printf {*STDERR} "%s Finished searching for duplicates\n", timestamp();
 }
+
+my $exifless_count = 0;
 
 my $exif = Image::ExifTool->new();
 $exif->Options( Unknown    => 2 );                      # Get all tags
@@ -130,6 +134,7 @@ foreach my $file (@all_files) {
     if ( !$tag_timestamp ) {
         printf {*STDERR} "%s No timestamps for %s\n", timestamp(), $file;
         next if !$exifless_prefix;
+        $exifless_count++;
     }
 
     # Get camera model
@@ -140,7 +145,7 @@ foreach my $file (@all_files) {
 
     # Make new filename
     my ( $new_dir, $new_file ) =
-      get_new_filename( $tag_timestamp, $digest, $model,
+      get_new_filename( $tag_timestamp, $digest, $model, $exifless_count,
         $EXT_FOR{ $info->{FileType} } );
 
     croak sprintf "mv %s %s can't be run because latter already exists\n",
@@ -229,7 +234,7 @@ sub get_digest {
 
 # Make new filename
 sub get_new_filename {
-    my ( $timestamp, $digest, $model, $extension ) = @_;
+    my ( $timestamp, $digest, $model, $count, $extension ) = @_;
 
     my ( $new_dir, $new_file );
 
@@ -248,9 +253,9 @@ sub get_new_filename {
     }
     else {
         $new_file =
-          sprintf '%s%s/%s-%s%s%s.%s',
+          sprintf "%s%s/%s-%0${zero_pad}d-%s%s%s.%s",
           $output_dir, ( defined $extra_dir ? q{/} . $extra_dir : q{} ),
-          $exifless_prefix,
+          $exifless_prefix, $count,
           $digest, ( defined $model ? q{-} . $model : q{} ),
           ( defined $extra_suffix ? q{-} . $extra_suffix : q{} ), $extension;
         $new_dir = sprintf '%s%s', $output_dir,
@@ -275,6 +280,7 @@ sub get_and_check_options {
         'extra_dir=s'       => \$extra_dir,
         'extra_suffix=s'    => \$extra_suffix,
         'exifless_prefix=s' => \$exifless_prefix,
+        'zero_pad=i'        => \$zero_pad,
         'debug'             => \$debug,
         'help'              => \$help,
         'man'               => \$man,
@@ -325,7 +331,7 @@ were created.
     perl rename_photo_video.pl --output_dir dir --extra_suffix John photo-dir
 
     perl rename_photo_video.pl --output_dir dir --extra_dir 2006/09 \
-        --exifless_prefix 2006_09_16 photo-dir
+        --exifless_prefix 2006_09_16 --zero_pad 2 photo-dir
 
 =head1 USAGE
 
@@ -335,6 +341,7 @@ were created.
         [--extra_dir dir]
         [--extra_suffix suffix]
         [--exifless_prefix prefix]
+        [--zero_pad int]
         [--debug]
         [--help]
         [--man]
@@ -363,6 +370,10 @@ Extra suffix to add to filename before extension.
 
 Prefix applied after output directory (and any extra subdirectory) for files
 without EXIF data.
+
+=item B<--zero_pad INT>
+
+Number of digits to zero pad ordinal for files without EXIF data.
 
 =item B<--debug>
 
