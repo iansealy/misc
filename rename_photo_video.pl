@@ -290,15 +290,16 @@ sub get_and_check_options {
 
     # Get options
     GetOptions(
-        'dry_run'           => \$dry_run,
-        'output_dir=s'      => \$output_dir,
-        'extra_dir=s'       => \$extra_dir,
-        'extra_suffix=s'    => \$extra_suffix,
-        'exifless_prefix=s' => \$exifless_prefix,
-        'zero_pad=i'        => \$zero_pad,
-        'debug'             => \$debug,
-        'help'              => \$help,
-        'man'               => \$man,
+        'dry_run'                => \$dry_run,
+        'output_dir=s'           => \$output_dir,
+        'extra_dir=s'            => \$extra_dir,
+        'extra_suffix=s'         => \$extra_suffix,
+        'exifless_prefix=s'      => \$exifless_prefix,
+        'zero_pad=i'             => \$zero_pad,
+        'check_file_modify_date' => \$check_file_modify_date,
+        'debug'                  => \$debug,
+        'help'                   => \$help,
+        'man'                    => \$man,
     ) or pod2usage(2);
 
     # Documentation
@@ -357,7 +358,7 @@ were created.
         [--extra_suffix suffix]
         [--exifless_prefix prefix]
         [--zero_pad int]
-        [--$heck_file_modify_date]
+        [--check_file_modify_date]
         [--debug]
         [--help]
         [--man]
