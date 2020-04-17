@@ -58,8 +58,8 @@ my $output_dir;
 my $extra_dir;
 my $extra_suffix;
 my $exifless_prefix;
-my $check_file_modify_date;
 my $zero_pad = 3;    ## no critic (ProhibitMagicNumbers)
+my $check_file_modify_date;
 
 my ( $debug, $help, $man );
 
