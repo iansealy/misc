@@ -46,8 +46,8 @@ Readonly our %MODEL_FOR => (
     'SM-G960F'            => 'Galaxy S9',
 );
 Readonly our @TAG_ORDER => qw(
-  CreateDate
   DateTimeOriginal
+  CreateDate
   ModifyDate
   GPSDateTime
 );
