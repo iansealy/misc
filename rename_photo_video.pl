@@ -58,6 +58,7 @@ my $output_dir;
 my $extra_dir;
 my $extra_suffix;
 my $exifless_prefix;
+my $check_file_modify_date;
 my $zero_pad = 3;    ## no critic (ProhibitMagicNumbers)
 
 my ( $debug, $help, $man );
@@ -124,13 +125,7 @@ foreach my $file (@all_files) {
     }
 
     # Check if preferred timestamp is present
-    my $tag_timestamp;
-    foreach my $tag (@TAG_ORDER) {
-        if ( exists $info->{$tag} ) {
-            $tag_timestamp = $info->{$tag};
-            last;
-        }
-    }
+    my $tag_timestamp = get_timestamp($info);
     if ( !$tag_timestamp ) {
         printf {*STDERR} "%s No timestamps for %s\n", timestamp(), $file;
         next if !$exifless_prefix;
@@ -205,6 +200,26 @@ sub get_dupes {
     }
 
     return @dupes;
+}
+
+# Get timestamp from tags
+sub get_timestamp {
+    my ($info) = @_;
+
+    my $tag_timestamp;
+
+    my @tags = @TAG_ORDER;
+    if ($check_file_modify_date) {
+        push @tags, 'FileModifyDate';
+    }
+    foreach my $tag (@tags) {
+        if ( exists $info->{$tag} ) {
+            $tag_timestamp = $info->{$tag};
+            last;
+        }
+    }
+
+    return $tag_timestamp;
 }
 
 # Get camera model
@@ -342,6 +357,7 @@ were created.
         [--extra_suffix suffix]
         [--exifless_prefix prefix]
         [--zero_pad int]
+        [--$heck_file_modify_date]
         [--debug]
         [--help]
         [--man]
@@ -374,6 +390,10 @@ without EXIF data.
 =item B<--zero_pad INT>
 
 Number of digits to zero pad ordinal for files without EXIF data.
+
+=item B<--check_file_modify_date>
+
+Check file modify date if other tags not present.
 
 =item B<--debug>
 
