@@ -30,6 +30,7 @@ use Sort::Naturally;
 Readonly our %EXT_FOR => (
     '3GP'  => '3gp',
     'AVI'  => 'avi',
+    'GIF'  => 'gif',
     'HEIC' => 'heic',
     'JPEG' => 'jpg',
     'MOV'  => 'mov',
