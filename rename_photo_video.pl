@@ -33,6 +33,7 @@ Readonly our %EXT_FOR => (
     'GIF'  => 'gif',
     'HEIC' => 'heic',
     'JPEG' => 'jpg',
+    'MKV'  => 'mkv',
     'MOV'  => 'mov',
     'MP4'  => 'mp4',
     'MPEG' => 'mpg',
