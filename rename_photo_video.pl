@@ -62,6 +62,7 @@ my $extra_dir;
 my $extra_suffix;
 my $exifless_prefix;
 my $zero_pad = 3;    ## no critic (ProhibitMagicNumbers)
+my $use_filename_for_timestamp;
 my $check_file_modify_date;
 
 my ( $debug, $help, $man );
@@ -128,8 +129,8 @@ foreach my $file (@all_files) {
     }
 
     # Check if preferred timestamp is present
-    my $tag_timestamp = get_timestamp($info);
-    if ( !$tag_timestamp ) {
+    my $timestamp = get_timestamp( $info, $file );
+    if ( !$timestamp ) {
         printf {*STDERR} "%s No timestamps for %s\n", timestamp(), $file;
         next if !$exifless_prefix;
         $exifless_count++;
@@ -143,7 +144,7 @@ foreach my $file (@all_files) {
 
     # Make new filename
     my ( $new_dir, $new_file ) =
-      get_new_filename( $tag_timestamp, $digest, $model, $exifless_count,
+      get_new_filename( $timestamp, $digest, $model, $exifless_count,
         $EXT_FOR{ $info->{FileType} } );
 
     croak sprintf "mv %s %s can't be run because latter already exists\n",
@@ -205,11 +206,11 @@ sub get_dupes {
     return @dupes;
 }
 
-# Get timestamp from tags
+# Get timestamp from tags or filename
 sub get_timestamp {
-    my ($info) = @_;
+    my ( $info, $file ) = @_;
 
-    my $tag_timestamp;
+    my $timestamp;
 
     my @tags = @TAG_ORDER;
     if ($check_file_modify_date) {
@@ -217,12 +218,21 @@ sub get_timestamp {
     }
     foreach my $tag (@tags) {
         if ( exists $info->{$tag} ) {
-            $tag_timestamp = $info->{$tag};
+            $timestamp = $info->{$tag};
             last;
         }
     }
 
-    return $tag_timestamp;
+    if ( $use_filename_for_timestamp && !$timestamp ) {
+        my ( $year, $month, $day, $hour, $min, $sec ) = $file =~
+          m/(\d{4})\D+(\d\d)\D+(\d\d)\D+(\d\d)\D+(\d\d)\D+(\d\d)\D+/xms;
+        if ($year) {
+            $timestamp = sprintf '%04d_%02d_%02d_%02d_%02d_%02d', $year, $month,
+              $day, $hour, $min, $sec;
+        }
+    }
+
+    return $timestamp;
 }
 
 # Get camera model
@@ -293,16 +303,17 @@ sub get_and_check_options {
 
     # Get options
     GetOptions(
-        'dry_run'                => \$dry_run,
-        'output_dir=s'           => \$output_dir,
-        'extra_dir=s'            => \$extra_dir,
-        'extra_suffix=s'         => \$extra_suffix,
-        'exifless_prefix=s'      => \$exifless_prefix,
-        'zero_pad=i'             => \$zero_pad,
-        'check_file_modify_date' => \$check_file_modify_date,
-        'debug'                  => \$debug,
-        'help'                   => \$help,
-        'man'                    => \$man,
+        'dry_run'                    => \$dry_run,
+        'output_dir=s'               => \$output_dir,
+        'extra_dir=s'                => \$extra_dir,
+        'extra_suffix=s'             => \$extra_suffix,
+        'exifless_prefix=s'          => \$exifless_prefix,
+        'zero_pad=i'                 => \$zero_pad,
+        'use_filename_for_timestamp' => \$use_filename_for_timestamp,
+        'check_file_modify_date'     => \$check_file_modify_date,
+        'debug'                      => \$debug,
+        'help'                       => \$help,
+        'man'                        => \$man,
     ) or pod2usage(2);
 
     # Documentation
@@ -361,6 +372,7 @@ were created.
         [--extra_suffix suffix]
         [--exifless_prefix prefix]
         [--zero_pad int]
+        [--use_filename_for_timestamp]
         [--check_file_modify_date]
         [--debug]
         [--help]
@@ -394,6 +406,10 @@ without EXIF data.
 =item B<--zero_pad INT>
 
 Number of digits to zero pad ordinal for files without EXIF data.
+
+=item B<--use_filename_for_timestamp>
+
+Get timestamp for new filename from existing filename.
 
 =item B<--check_file_modify_date>
 
