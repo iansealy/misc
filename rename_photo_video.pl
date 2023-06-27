@@ -267,6 +267,10 @@ sub get_new_filename {
 
     my ( $new_dir, $new_file );
 
+    if ( defined $model && defined $extra_suffix && $model eq $extra_suffix ) {
+        undef $model;
+    }
+
     if ($timestamp) {
         my ( $year, $month, $day, $hour, $min, $sec ) = split /_/xms,
           $timestamp;
