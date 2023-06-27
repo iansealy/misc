@@ -47,6 +47,7 @@ Readonly our %MODEL_FOR => (
     'SM-G930F'            => 'Galaxy S7',
     'SM-G960F'            => 'Galaxy S9',
     'SM-G981B'            => 'Galaxy S20',
+    'SM-F936B'            => 'Galaxy Z Fold4',
 );
 Readonly our @TAG_ORDER => qw(
   DateTimeOriginal
