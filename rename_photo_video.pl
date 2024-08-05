@@ -233,6 +233,15 @@ sub get_timestamp {
         }
     }
 
+    if ( $use_filename_for_timestamp && !$timestamp ) {
+        my ( $year, $month, $day, $hour, $min, $sec ) = $file =~
+          m/(\d{4})(\d\d)\(\d\d)\D+(\d\d)\(\d\d)\(\d\d)\D+/xms;
+        if ($year) {
+            $timestamp = sprintf '%04d_%02d_%02d_%02d_%02d_%02d', $year, $month,
+              $day, $hour, $min, $sec;
+        }
+    }
+
     return $timestamp;
 }
 
